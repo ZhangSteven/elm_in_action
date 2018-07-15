@@ -1,8 +1,3 @@
-{- Version 2
-
-    initial model added
- -}
-
 module PhotoGroove exposing (..)
 
 import Html exposing (..)
@@ -10,10 +5,13 @@ import Html.Attributes exposing (..)
 
 
 initialModel = 
-    [{url = "1.jpeg"}
-    ,{url = "2.jpeg"}
-    ,{url = "3.jpeg"}
-    ]
+    {photos =
+        [{url = "1.jpeg"}
+        ,{url = "2.jpeg"}
+        ,{url = "3.jpeg"}
+        ]
+    ,selectedUrl = "1.jpeg"
+    }
 
 
 urlPrefix =
@@ -23,12 +21,38 @@ urlPrefix =
 view model = 
     div [class "content"]
         [h1 [] [text "Photo Groove"]
-        , div [id "thumbnails"] (List.map viewThumbnail initialModel)
+        , div [id "thumbnails"] 
+            (List.map (\photo -> viewThumbnail model.selectedUrl photo) 
+                model.photos
+            )
+        , img [class "large"    -- show the selected image as a big one
+                , src (urlPrefix ++ "large/" ++ model.selectedUrl)
+            ] 
+            []
         ]
 
 
-viewThumbnail thumbnail = 
-    img [src (urlPrefix ++ thumbnail.url)] []
+viewThumbnail selectedUrl thumbnail = 
+    {- The Html.classList function, builds a 'class' attribute using
+        a list of tuples, with each tuple containing first the desired
+        class name, and second a boolean for whether to include the
+        class. -}
+
+    img [src (urlPrefix ++ thumbnail.url)
+        ,classList [("selected", selectedUrl == thumbnail.url)]
+        ]
+        []
+
+    {- The above code is same as below
+
+    if selectedUrl == thumbnail then
+        img [src (urlPrefix ++ thumbnail.url)
+            ,class "selected"
+            ] 
+            []
+    else
+        img [src (urlPrefix ++ thumbnail.url)] []
+    -}
 
 
 main = 
