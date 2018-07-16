@@ -3,3 +3,6 @@
 
 # local packages no need to keep
 */elm-stuff/*
+
+# package file no need
+*/elm-package.json
