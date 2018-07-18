@@ -3,8 +3,20 @@ module PhotoGroove exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Array exposing (Array)
 
 
+type alias Photo =
+    { url : String }
+
+type alias Model =
+    { photos : List Photo, selectedUrl : String}
+
+type alias Msg =
+    { operation : String, data : String }
+
+
+initialModel : Model
 initialModel =
     { photos =
         [ {url = "1.jpeg"}
@@ -15,21 +27,38 @@ initialModel =
     }
 
 
+-- create an Array of photos, for random access
+photoArray : Array Photo
+photoArray =
+    Array.fromList initialModel.photos
+
+
 urlPrefix: String
 urlPrefix =
     "http://elm-in-action.com/"
 
 
+update : Msg -> Model -> Model
 update msg model =
-    if msg.operation == "SELECT_PHOTO" then
-        { model | selectedUrl = msg.data }
-    else
-        model
+    case msg.operation of
+        "SELECT_PHOTO" -> { model | selectedUrl = msg.data }
+        "SURPRISE_ME"  -> { model | selectedUrl = "2.jpeg" }
+        _ -> model
 
 
+{-
+    The view function is responsible for generating the HTML data,
+    how that data is rendered, i.e., style, is included in the HTML file.
+    For example, the class 'content', 'large', 'selected' (viewThumbnail)
+    style definition is in index.html.
+-}
+view : Model -> Html Msg
 view model =
-    div [class "content"]
-        [h1 [] [text "Photo Groove"]
+    div [ class "content" ]
+        [ h1 [] [text "Photo Groove" ]
+        , button
+            [ onClick { operation = "SURPRISE_ME", data = "" } ]
+            [ text "Surprise Me!" ]
         , div
             [id "thumbnails"]
             (List.map (viewThumbnail model.selectedUrl)
@@ -43,6 +72,7 @@ view model =
         ]
 
 
+viewThumbnail : String -> Photo -> Html Msg
 viewThumbnail selectedUrl thumbnail =
     {- The Html.classList function, builds a 'class' attribute using
         a list of tuples, with each tuple containing first the desired
@@ -56,16 +86,6 @@ viewThumbnail selectedUrl thumbnail =
         ]
         []
 
-    {- The above code is same as below
-
-    if selectedUrl == thumbnail then
-        img [src (urlPrefix ++ thumbnail.url)
-            ,class "selected"
-            ]
-            []
-    else
-        img [src (urlPrefix ++ thumbnail.url)] []
-    -}
 
 
 main =
