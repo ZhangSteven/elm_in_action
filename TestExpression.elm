@@ -1,7 +1,7 @@
 {-
     Some basics in Elm.
 -}
-module Test01 exposing(..)
+module TestExpression exposing(..)
 
 {-
     In Elm, everything is a expression. A function is also an expression
