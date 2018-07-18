@@ -6,12 +6,12 @@ import Html.Events exposing (onClick)
 
 
 initialModel =
-    {photos =
-        [{url = "1.jpeg"}
-        ,{url = "2.jpeg"}
-        ,{url = "3.jpeg"}
+    { photos =
+        [ {url = "1.jpeg"}
+        , {url = "2.jpeg"}
+        , {url = "3.jpeg"}
         ]
-    ,selectedUrl = "1.jpeg"
+    , selectedUrl = "1.jpeg"
     }
 
 
@@ -30,12 +30,14 @@ update msg model =
 view model =
     div [class "content"]
         [h1 [] [text "Photo Groove"]
-        , div [id "thumbnails"]
+        , div
+            [id "thumbnails"]
             (List.map (viewThumbnail model.selectedUrl)
                 model.photos
             )
-        , img [class "large"    -- show the selected image as a big one
-                , src (urlPrefix ++ "large/" ++ model.selectedUrl)
+        , img
+            [ class "large"    -- show the selected image as a big one
+            , src (urlPrefix ++ "large/" ++ model.selectedUrl)
             ]
             []
         ]
@@ -47,7 +49,8 @@ viewThumbnail selectedUrl thumbnail =
         class name, and second a boolean for whether to include the
         class. -}
 
-    img [ src (urlPrefix ++ thumbnail.url)
+    img
+        [ src (urlPrefix ++ thumbnail.url)
         , classList [("selected", selectedUrl == thumbnail.url)]
         , onClick {operation = "SELECT_PHOTO", data = thumbnail.url}
         ]

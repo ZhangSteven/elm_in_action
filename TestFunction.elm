@@ -123,6 +123,79 @@ chain n =
                     n :: chain (3*n + 1)
 
 
+{-
+    fold a list: It's Elm's 'reduce' function, but here it's called fold.
+
+    Whenever we traverse a list once, element by element, then produce
+    some value, chances are we are going to need a fold. So it's a very
+    useful function.
+
+    There are two versions of fold, List.foldl (start from left) or
+    List.foldr (start from right), called as:
+
+        List.foldl f initialValue list
+
+    Previously we have used recursion to implement 'sum' and 'map', we
+    can do it with fold, much more elegant.
+-}
+
+-- sum all the elements in a list
+sum : List number -> number
+-- This is OK.
+-- sum list =
+--     List.foldl (+) 0 list
+--
+-- But since 'list' is on both sides of the equation, we can take it
+-- out and write the function as:
+sum =
+    List.foldl (+) 0
+
+
+{-
+    We can also implement map using foldl, as below.
+
+    Using foldr or foldl both achieve the result, however the foldr
+    implementation is considered better, because in Elm, the :: operation
+    is much cheaper than the ++ operator. So if we are building a List
+    from a list, then foldr is usually a better option.
+
+map f list =
+    List.foldl (\x acc -> acc ++ [(f x)]) [] list
+---}
+map : (a -> b) -> List a -> List b
+map f list =
+    List.foldr (\x acc -> (f x) :: acc) [] list
+
+
+-- find maximum of a list
+maximum : List comparable -> Maybe comparable
+-- unfortunately this does not compile
+-- maximum =
+--     let
+--         bigger a b =
+--             if b == Nothing || b < a then
+--                 a
+--             else
+--                 b
+--     in
+--         List.foldl bigger Nothing -- this is a function
+
+-- the solution from the book
+maximum =
+    let
+        bigger x acc =
+            if
+                case acc of
+                    Nothing -> True
+                    Just n -> x > n
+            then
+                Just x
+            else
+                acc
+    in
+        List.foldl bigger Nothing -- this is a function
+
+
 
 output : String
 output =
@@ -155,13 +228,20 @@ output =
 
     -- toString <| chain 30
 
-    let
-        longEnough : List a -> Bool
-        longEnough list =
-            if List.length list > 15 then
-                True
-            else
-                False
-    in
-        toString <| List.length <| List.filter longEnough
-            <| List.map chain <| List.range 1 100
+    -- 角谷猜想
+    -- let
+    --     longEnough : List a -> Bool
+    --     longEnough list =
+    --         if List.length list > 15 then
+    --             True
+    --         else
+    --             False
+    -- in
+    --     toString <| List.length <| List.filter longEnough
+    --         <| List.map chain <| List.range 1 100
+
+    -- Test fold functions
+    -- toString <| sum <| List.range 1 100
+    -- toString <| map ((+) 3) <| List.range 1 5
+    -- toString <| maximum []
+    toString <| maximum [1, 3, 11, 8]
