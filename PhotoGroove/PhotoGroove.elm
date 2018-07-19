@@ -10,10 +10,15 @@ type alias Photo =
     { url : String }
 
 type alias Model =
-    { photos : List Photo, selectedUrl : String}
+    { photos : List Photo, selectedUrl : String, choosenSize : ThumbnailSize }
 
 type alias Msg =
     { operation : String, data : String }
+
+type ThumbnailSize
+    = Small
+    | Medium
+    | Large
 
 
 initialModel : Model
@@ -24,6 +29,7 @@ initialModel =
         , {url = "3.jpeg"}
         ]
     , selectedUrl = "1.jpeg"
+    , choosenSize = Large
     }
 
 
@@ -51,6 +57,13 @@ update msg model =
     how that data is rendered, i.e., style, is included in the HTML file.
     For example, the class 'content', 'large', 'selected' (viewThumbnail)
     style definition is in index.html.
+
+    The function view takes a Model and returns Html, but we cannot put
+    its type as Model -> Html, because Html, like List and Array, has a
+    type vairiable, i.e, Html a.
+
+    Html's type variable reflects the type of message it sends to update
+    in response to events from handlers like onClick.
 -}
 view : Model -> Html Msg
 view model =
@@ -59,8 +72,12 @@ view model =
         , button
             [ onClick { operation = "SURPRISE_ME", data = "" } ]
             [ text "Surprise Me!" ]
+        , h3 [] [ text "Thumbnail Size: " ]
         , div
-            [id "thumbnails"]
+            [ id "choose-size" ]
+            (List.map viewSizeChooser [ Small, Medium, Large ])
+        , div
+            [ id "thumbnails", class (sizeToString model.choosenSize) ]
             (List.map (viewThumbnail model.selectedUrl)
                 model.photos
             )
@@ -72,6 +89,16 @@ view model =
         ]
 
 
+{-
+    Render a thumbnail
+
+    A thumbnail is registered with an onClick handler, which sends a message
+    of type Msg
+
+    A thumbnail is applied with class attribute "selected" if the selectedUrl
+    is the same as its url. The style sheet is responsible for displaying
+    special effect for the selected thumbnail.
+-}
 viewThumbnail : String -> Photo -> Html Msg
 viewThumbnail selectedUrl thumbnail =
     {- The Html.classList function, builds a 'class' attribute using
@@ -85,6 +112,23 @@ viewThumbnail selectedUrl thumbnail =
         , onClick {operation = "SELECT_PHOTO", data = thumbnail.url}
         ]
         []
+
+
+-- render a thumbnail size radio button
+viewSizeChooser : ThumbnailSize -> Html Msg
+viewSizeChooser size =
+    label []
+        [ input [ type_ "radio", name "size" ] []
+        , text (sizeToString size)
+        ]
+
+
+sizeToString : ThumbnailSize -> String
+sizeToString size =
+    case size of
+        Small -> "small"
+        Medium -> "medium"
+        Large -> "large"
 
 
 
