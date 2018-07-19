@@ -169,20 +169,9 @@ map f list =
 
 -- find maximum of a list
 maximum : List comparable -> Maybe comparable
--- unfortunately this does not compile
--- maximum =
---     let
---         bigger a b =
---             if b == Nothing || b < a then
---                 a
---             else
---                 b
---     in
---         List.foldl bigger Nothing -- this is a function
-
--- the solution from the book
 maximum =
     let
+        bigger : comparable -> Maybe comparable -> Maybe comparable
         bigger x acc =
             if
                 case acc of
@@ -193,7 +182,7 @@ maximum =
             else
                 acc
     in
-        List.foldl bigger Nothing -- this is a function
+        List.foldl bigger Nothing
 
 
 
@@ -243,5 +232,11 @@ output =
     -- Test fold functions
     -- toString <| sum <| List.range 1 100
     -- toString <| map ((+) 3) <| List.range 1 5
-    -- toString <| maximum []
-    toString <| maximum [1, 3, 11, 8]
+
+    let
+        resultAsString : Maybe a -> String
+        resultAsString =
+            Maybe.withDefault "empty list" << Maybe.map toString
+    in
+        -- resultAsString <| maximum []
+        resultAsString <| maximum [1, 3, 11, 8]
