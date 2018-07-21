@@ -139,14 +139,18 @@ chain n =
     can do it with fold, much more elegant.
 -}
 
--- sum all the elements in a list
+{-
+    sum all the elements in a list
+
+    Below is OK:
+    sum list =
+        List.foldl (+) 0 list
+
+    Since 'list' is on both sides of the equation, and it is the last
+    parameter of both 'sum' and 'foldl', we can remove it and write in
+    a more compact form.
+-}
 sum : List number -> number
--- This is OK.
--- sum list =
---     List.foldl (+) 0 list
---
--- But since 'list' is on both sides of the equation, we can take it
--- out and write the function as:
 sum =
     List.foldl (+) 0
 
@@ -163,8 +167,8 @@ map f list =
     List.foldl (\x acc -> acc ++ [(f x)]) [] list
 ---}
 map : (a -> b) -> List a -> List b
-map f list =
-    List.foldr (\x acc -> (f x) :: acc) [] list
+map f =
+    List.foldr (\x acc -> (f x) :: acc) []
 
 
 -- find maximum of a list
@@ -183,6 +187,36 @@ maximum =
                 acc
     in
         List.foldl bigger Nothing
+
+
+{-
+    Higher order helper functions:
+
+    (<|), (>|): function application. They work like Unix pipe, the result of
+    a stage flows to the next stage in the pipe.
+
+    f <| x == f x   -- apply argument x to function f
+
+    f <| x == x >| f
+
+    Function calls can be chained together,
+
+    f <| g x == f (g x)
+
+    (<<), (>>): function composition. It can be used to define new functions,
+    let h = f << g, then
+
+    h x == f (g x)
+-}
+addOne : number -> number
+addOne =
+    (+) 1
+
+three = addOne <| 2      -- 3
+threeAgain = (+) 1 <| 2  -- 3, same
+
+-- chain function calls together
+eight = sqrt <| (*) 6.4 <| 10   -- 8.0
 
 
 
@@ -233,6 +267,7 @@ output =
     -- toString <| sum <| List.range 1 100
     -- toString <| map ((+) 3) <| List.range 1 5
 
+    -- Test maximum function
     let
         resultAsString : Maybe a -> String
         resultAsString =
