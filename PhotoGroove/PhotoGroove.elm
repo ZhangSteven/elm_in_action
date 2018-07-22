@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Array exposing (Array)
+import Random
 
 
 type alias Photo =
@@ -14,6 +15,7 @@ type alias Model =
 
 type Msg =
     SelectByUrl String
+    | SelectByIndex Int
     | SetSize ThumbnailSize
     | SurpriseMe
 
@@ -46,12 +48,30 @@ urlPrefix =
     "http://elm-in-action.com/"
 
 
-update : Msg -> Model -> Model
+-- Question: This is not a pure function, how to change it?
+randomPhotoPicker : Random.Generator Int
+randomPhotoPicker =
+    Random.int 0 (Array.length photoArray - 1)
+
+
+-- Question: This is not a pure function, how to change it?
+getPhotoUrl : Int -> String
+getPhotoUrl index =
+    let
+        photo = Maybe.withDefault { url = "" } <| Array.get index photoArray
+    in
+        photo.url
+
+
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        SelectByUrl url -> { model | selectedUrl = url }
-        SurpriseMe -> { model | selectedUrl = "2.jpeg" }
-        SetSize size_ -> { model | choosenSize = size_ }
+        SelectByUrl url -> ({ model | selectedUrl = url }, Cmd.none)
+        SurpriseMe -> (model, Random.generate SelectByIndex randomPhotoPicker)
+        SelectByIndex index -> ({model | selectedUrl = getPhotoUrl index},
+                                    Cmd.none
+                               )
+        SetSize size_ -> ({ model | choosenSize = size_ }, Cmd.none)
 
 
 {-
@@ -138,8 +158,9 @@ sizeToString size_ =
 
 
 main =
-    Html.beginnerProgram
-        { model = initialModel
+    Html.program
+        { init = (initialModel, Cmd.none)
         , view = view
         , update = update
+        , subscriptions = (\model -> Sub.none)
         }
