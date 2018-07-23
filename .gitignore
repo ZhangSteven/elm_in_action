@@ -1,5 +1,6 @@
 # complied JS no need keep
-*/elm.js
+*/*.js
+*.js
 
 # ignore elm packages (local and sub directories)
 */elm-stuff/*

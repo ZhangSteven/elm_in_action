@@ -1,6 +1,6 @@
 {-
-    This version sends HTTP request to a server to obtain the list
-    of photos to display.
+    This version uses fixed set of photos. Next we will load list of
+    photos from a server.
 -}
 
 module PhotoGroove exposing (..)
@@ -10,25 +10,19 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Array exposing (Array)
 import Random
-import Http
 
 
 type alias Photo =
     { url : String }
 
 type alias Model =
-    { photos : List Photo
-    , selectedUrl : Maybe String    -- use Maybe because the photo List can
-                                    -- be empty
-    , loadingError : Maybe String   -- there may be errors
-    , choosenSize : ThumbnailSize }
+    { photos : List Photo, selectedUrl : String, choosenSize : ThumbnailSize }
 
 type Msg =
     SelectByUrl String
     | SelectByIndex Int
     | SetSize ThumbnailSize
     | SurpriseMe
-    | LoadPhotos (Result Http.Error String)
 
 type ThumbnailSize
     = Small
@@ -38,9 +32,12 @@ type ThumbnailSize
 
 initialModel : Model
 initialModel =
-    { photos = []
-    , selectedUrl = Nothing
-    , loadingError = Nothing
+    { photos =
+        [ {url = "1.jpeg"}
+        , {url = "2.jpeg"}
+        , {url = "3.jpeg"}
+        ]
+    , selectedUrl = "1.jpeg"
     , choosenSize = Medium
     }
 
@@ -63,51 +60,23 @@ randomPhotoPicker =
 
 
 -- Question: This is not a pure function, how to change it?
--- getPhotoUrl : Int -> Maybe String
--- getPhotoUrl index =
---     Maybe.map .url <| Array.get index photoArray
+getPhotoUrl : Int -> String
+getPhotoUrl index =
+    let
+        photo = Maybe.withDefault { url = "" } <| Array.get index photoArray
+    in
+        photo.url
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        SelectByUrl url -> ({ model | selectedUrl = Just url }, Cmd.none)
-        SurpriseMe -> (model,
-                        let
-                            randomPhotoPicker : Random.Generator Int
-                            randomPhotoPicker =
-                                Random.int 0 (List.length model.photos - 1)
-                        in
-                            Random.generate SelectByIndex randomPhotoPicker
-                      )
-        SelectByIndex index -> ({model |
-                                    selectedUrl =
-                                        Maybe.map .url <| Array.get index
-                                            <| Array.fromList model.photos
-                                }
-                                , Cmd.none
+        SelectByUrl url -> ({ model | selectedUrl = url }, Cmd.none)
+        SurpriseMe -> (model, Random.generate SelectByIndex randomPhotoPicker)
+        SelectByIndex index -> ({model | selectedUrl = getPhotoUrl index},
+                                    Cmd.none
                                )
         SetSize size_ -> ({ model | choosenSize = size_ }, Cmd.none)
-        {- The below code compiles but let's refactor the nested case statement
-        LoadPhotos result ->
-            case result of
-                Ok responseStr ->
-                    let
-                        urls = String.split "," responseStr
-                    in
-                        ({ model | photos = List.map Photo urls }, Cmd.none)
-
-                Err _ ->
-                    (model, Cmd.none)   -- do nothing
-        -}
-        LoadPhotos (Ok responseStr) ->
-            let
-                urls = String.split "," responseStr
-            in
-                ({ model | photos = List.map Photo urls }, Cmd.none)
-
-        LoadPhotos (Err _) ->
-            (model, Cmd.none)   -- do nothing
 
 
 {-
@@ -137,7 +106,11 @@ view model =
         , div
             [ id "thumbnails", class (sizeToString model.choosenSize) ]
             (List.map (viewThumbnail model.selectedUrl) model.photos)
-        , viewLarge model.selectedUrl
+        , img
+            [ class "large"    -- show the selected image as a big one
+            , src <| urlPrefix ++ "large/" ++ model.selectedUrl
+            ]
+            []
         ]
 
 
@@ -151,7 +124,7 @@ view model =
     is the same as its url. The style sheet is responsible for displaying
     special effect for the selected thumbnail.
 -}
-viewThumbnail : Maybe String -> Photo -> Html Msg
+viewThumbnail : String -> Photo -> Html Msg
 viewThumbnail selectedUrl thumbnail =
     {- The Html.classList function, builds a 'class' attribute using
         a list of tuples, with each tuple containing first the desired
@@ -160,29 +133,10 @@ viewThumbnail selectedUrl thumbnail =
 
     img
         [ src (urlPrefix ++ thumbnail.url)
-        {-
-            This works. But there is a better way to compare String to
-            Maybe String
-
-        , classList [("selected",
-                        case selectedUrl of
-                            Nothing -> False
-                            Just url -> url == thumbnail.url
-                    )]
-        -}
-        , classList [("selected", selectedUrl == Just thumbnail.url)]
+        , classList [("selected", selectedUrl == thumbnail.url)]
         , onClick <| SelectByUrl thumbnail.url
         ]
         []
-
-
--- render the large image
-viewLarge : Maybe String -> Html Msg
-viewLarge selectedUrl =
-    case selectedUrl of
-        Nothing -> text ""  -- render nothing at all
-        Just url ->
-            img [ class "large", src <| urlPrefix ++ "large/" ++ url ] []
 
 
 -- render a thumbnail size radio button
