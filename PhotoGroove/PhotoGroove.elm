@@ -21,7 +21,8 @@ type alias Model =
     , selectedUrl : Maybe String    -- use Maybe because the photo List can
                                     -- be empty
     , loadingError : Maybe String   -- there may be errors
-    , choosenSize : ThumbnailSize }
+    , choosenSize : ThumbnailSize
+    }
 
 type Msg =
     SelectByUrl String
@@ -45,6 +46,16 @@ initialModel =
     }
 
 
+initialCmd : Cmd Msg
+initialCmd =
+    Http.send
+        LoadPhotos
+        (Http.getString "http://elm-in-action.com/photos/list")
+-- initialCmd =
+--     Task.perform handleLoadFailure handleLoadSuccess
+--         <| Http.getString "http://elm-in-action.com/breakfast-burritos/list"
+
+
 -- create an Array of photos, for random access
 photoArray : Array Photo
 photoArray =
@@ -57,9 +68,9 @@ urlPrefix =
 
 
 -- Question: This is not a pure function, how to change it?
-randomPhotoPicker : Random.Generator Int
-randomPhotoPicker =
-    Random.int 0 (Array.length photoArray - 1)
+-- randomPhotoPicker : Random.Generator Int
+-- randomPhotoPicker =
+--     Random.int 0 (Array.length photoArray - 1)
 
 
 -- Question: This is not a pure function, how to change it?
@@ -104,10 +115,18 @@ update msg model =
             let
                 urls = String.split "," responseStr
             in
-                ({ model | photos = List.map Photo urls }, Cmd.none)
+                ({ model | photos = List.map Photo urls
+                    , selectedUrl = List.head urls
+                 }
+                , Cmd.none
+                )
 
         LoadPhotos (Err _) ->
-            (model, Cmd.none)   -- do nothing
+            ({ model |
+                loadingError = Just "Error! (Try turning it off and on again?)"
+             }
+            , Cmd.none
+            )
 
 
 {-
@@ -207,11 +226,22 @@ sizeToString size_ =
         Large -> "large"
 
 
+viewOrError : Model -> Html Msg
+viewOrError model =
+    case model.loadingError of
+        Nothing -> view model
+        Just errorMessage ->
+            div [ class "error-message" ]
+                [ h1 [] [ text "Photo Groove" ]
+                , p [] [ text errorMessage ]
+                ]
+
+
 
 main =
     Html.program
-        { init = (initialModel, Cmd.none)
-        , view = view
+        { init = (initialModel, initialCmd)
+        , view = viewOrError
         , update = update
-        , subscriptions = (\model -> Sub.none)
+        , subscriptions = (\_ -> Sub.none)
         }

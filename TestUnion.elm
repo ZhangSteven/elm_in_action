@@ -7,10 +7,16 @@ module TestUnion exposing(..)
 {-
     Define a Union type, a simple case.
 
-    We can use keyword 'type' to define a new type, 'PictureSize' as a group
+    In the simple case, we can think of a union like 'PictureSize' as a group
     of symbols.
 
     The names of the type and symbols must have their first letter capitalized.
+
+    Actually, the boolean type is a union.
+
+    type Bool =
+        True
+        | False
 -}
 type PictureSize =
     Small
