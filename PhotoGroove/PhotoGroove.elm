@@ -1,20 +1,20 @@
-{-
-    This version sends HTTP request to a server to obtain the list
-    of photos to display.
--}
-
 module PhotoGroove exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes exposing (id, class, classList, src, name, type_, title)
 import Html.Events exposing (onClick)
 import Array exposing (Array)
 import Random
 import Http
+import Json.Decode exposing (Decoder, int, string, list)
+import Json.Decode.Pipeline exposing (decode, required, optional)
 
 
 type alias Photo =
-    { url : String }
+    { url : String
+    , size : Int
+    , title : String
+    }
 
 type alias Model =
     { photos : List Photo
@@ -29,12 +29,14 @@ type Msg =
     | SelectByIndex Int
     | SetSize ThumbnailSize
     | SurpriseMe
-    | LoadPhotos (Result Http.Error String)
+    | LoadPhotos (Result Http.Error (List Photo))
 
 type ThumbnailSize
     = Small
     | Medium
     | Large
+
+
 
 
 initialModel : Model
@@ -48,35 +50,22 @@ initialModel =
 
 initialCmd : Cmd Msg
 initialCmd =
-    Http.send
-        LoadPhotos
-        (Http.getString "http://elm-in-action.com/photos/list")
--- initialCmd =
---     Task.perform handleLoadFailure handleLoadSuccess
---         <| Http.getString "http://elm-in-action.com/breakfast-burritos/list"
-
-
--- create an Array of photos, for random access
-photoArray : Array Photo
-photoArray =
-    Array.fromList initialModel.photos
+    let
+        photoDecoder : Decoder Photo
+        photoDecoder =
+            decode Photo
+                |> required "url" string
+                |> required "size" int
+                |> optional "title" string "(untitled)"
+    in
+        Http.send LoadPhotos
+            <| Http.get "http://elm-in-action.com/photos/list.json"
+            <| list photoDecoder
 
 
 urlPrefix: String
 urlPrefix =
     "http://elm-in-action.com/"
-
-
--- Question: This is not a pure function, how to change it?
--- randomPhotoPicker : Random.Generator Int
--- randomPhotoPicker =
---     Random.int 0 (Array.length photoArray - 1)
-
-
--- Question: This is not a pure function, how to change it?
--- getPhotoUrl : Int -> Maybe String
--- getPhotoUrl index =
---     Maybe.map .url <| Array.get index photoArray
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -99,27 +88,13 @@ update msg model =
                                 , Cmd.none
                                )
         SetSize size_ -> ({ model | choosenSize = size_ }, Cmd.none)
-        {- The below code compiles but let's refactor the nested case statement
-        LoadPhotos result ->
-            case result of
-                Ok responseStr ->
-                    let
-                        urls = String.split "," responseStr
-                    in
-                        ({ model | photos = List.map Photo urls }, Cmd.none)
 
-                Err _ ->
-                    (model, Cmd.none)   -- do nothing
-        -}
-        LoadPhotos (Ok responseStr) ->
-            let
-                urls = String.split "," responseStr
-            in
-                ({ model | photos = List.map Photo urls
-                    , selectedUrl = List.head urls
-                 }
-                , Cmd.none
-                )
+        LoadPhotos (Ok photos) ->
+            ({ model | photos = photos
+                , selectedUrl = Maybe.map .url <| List.head photos
+             }
+            , Cmd.none
+            )
 
         LoadPhotos (Err _) ->
             ({ model |
@@ -179,16 +154,7 @@ viewThumbnail selectedUrl thumbnail =
 
     img
         [ src (urlPrefix ++ thumbnail.url)
-        {-
-            This works. But there is a better way to compare String to
-            Maybe String
-
-        , classList [("selected",
-                        case selectedUrl of
-                            Nothing -> False
-                            Just url -> url == thumbnail.url
-                    )]
-        -}
+        , title <| thumbnail.title ++ " [" ++ toString thumbnail.size ++ " KB]"
         , classList [("selected", selectedUrl == Just thumbnail.url)]
         , onClick <| SelectByUrl thumbnail.url
         ]

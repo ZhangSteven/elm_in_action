@@ -136,7 +136,6 @@ output =
     -- toString <| convert (field "x" float) target
 
     -- Compose everything together
-
     let
         recordDecoder = map2 MyRecord (field "x" float) (field "y" string)
     in
