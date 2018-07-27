@@ -38,7 +38,6 @@ type ThumbnailSize
 
 
 
-
 initialModel : Model
 initialModel =
     { photos = []

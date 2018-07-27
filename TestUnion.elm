@@ -143,10 +143,78 @@ showList list =
             toString value ++ " " ++ showList remaining
 
 
+{-
+    Define a binary tree
+
+    A binary tree is either an empty tree or it's an element that contains
+    some value and two sub trees.
+
+    To insert an value into a binary tree, we do:
+
+    1. If it's an empty tree, then create the first node with the value a,
+        i.e., the root, and two sub trees (both empty).
+
+    2. If the tree is not empty, compare the value to the value contained in
+        the root, then
+            if it is bigger, go to the right subtree and repeat (1)
+            if it is smaller, go to the left subtree and repeat (1)
+
+    This part of code comes from "Learn you an Elm",
+
+    https://learnyouanelm.github.io/pages/08-making-our-own-types-and-typeclasses.html
+-}
+type Tree a =
+    EmptyTree
+    | TreeNode a (Tree a) (Tree a)
+
+singleton : a -> Tree a
+singleton x =
+    TreeNode x EmptyTree EmptyTree
+
+treeInsert : comparable -> Tree comparable -> Tree comparable
+treeInsert x tree =
+    case tree of
+        EmptyTree -> singleton x
+        TreeNode value left right ->
+            if x == value then
+                tree    -- no change
+            else if x > value then
+                TreeNode value left (treeInsert x right)
+            else
+                TreeNode value (treeInsert x left) right
+
+
+-- Test whether a value is an element in the tree
+treeElem : comparable -> Tree comparable -> Bool
+treeElem x tree =
+    case tree of
+        EmptyTree -> False
+        TreeNode value left right ->
+            if x == value then
+                True
+            else if x > value then
+                treeElem x right
+            else
+                treeElem x left
+
+
+treeFromList : List comparable -> Tree comparable
+treeFromList =
+    List.foldl treeInsert EmptyTree
+
+
 
 output : String
 output =
     -- showSize Small
     -- toString <| Small
     -- toString <| List.map showUser [u1, u2, u3, u4]
-    showList n4
+    -- showList n4
+
+    -- test binary tree
+    let
+        tree = treeFromList [5,3,7,1,4,6,8]
+    in
+        toString tree
+        -- toString <| treeElem 10 tree
+        -- toString <| treeElem 8 tree
