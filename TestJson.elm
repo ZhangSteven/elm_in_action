@@ -34,13 +34,13 @@ import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 
     Result is a union type defined as:
 
-    Result =
-        Ok resultType
+    Result errorType valueType =
+        Ok valueType
         | Err errorType
 
-    where resultType and errorType are type variables. Result is used to
+    where valueType and errorType are type variables. Result is used to
     deliver results by many modules, for example in the PhotoGroove app,
-    the Http module returns results as Result Ok String Err Http.Error.
+    the Http module returns results as Result Http.Error String.
 
     In the case of decodeString function, the error type is always String,
     but the response type depends on the decoder used. For example, if a
