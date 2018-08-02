@@ -1,3 +1,7 @@
+{-
+    This is the version of PhotoGroove before chapter 5, talking to JavaScript.
+-}
+
 module PhotoGroove exposing (..)
 
 import Html exposing (..)
@@ -118,27 +122,6 @@ update msg model =
 
 
 {-
-    Create a helper function to add HTML node.
-
-    Html.node function is used to create node in the virtual DOM. functions
-    like div, img, button are all helper functions that call node under the
-    cover. For example,
-
-    node "button" [ class "large" ] [ text "Send" ]
-          button  [ class "large" ] [ text "Send" ]
-
-    are the same.
-
-    You can think of button implemented as:
-
-    button =
-        node "button"
--}
-paperSlider =
-    node "paper-slider"
-
-
-{-
     The view function is responsible for generating the HTML data,
     how that data is rendered, i.e., style, is included in the HTML file.
     For example, the class 'content', 'large', 'selected' (viewThumbnail)
@@ -158,11 +141,6 @@ view model =
         , button
             [ onClick SurpriseMe ]
             [ text "Surprise Me!" ]
-        , div [ class "filters" ]
-            [ viewFilter "Hue" 0
-            , viewFilter "Ripple" 0
-            , viewFilter "Noise" 0
-            ]
         , h3 [] [ text "Thumbnail Size: " ]
         , div
             [ id "choose-size" ]
@@ -171,18 +149,6 @@ view model =
             [ id "thumbnails", class (sizeToString model.choosenSize) ]
             (List.map (viewThumbnail model.selectedUrl) model.photos)
         , viewLarge model.selectedUrl
-        ]
-
-
-{-
-    Render the slider component
--}
-viewFilter : String -> Int -> Html Msg
-viewFilter name magnitude =
-    div [ class "filter-slider" ]
-        [ label [] [ text name ]
-        , paperSlider [ Html.Attributes.max "11" ] []
-        , label [] [ text <| toString magnitude ]
         ]
 
 
