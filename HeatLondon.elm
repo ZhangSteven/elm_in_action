@@ -5,6 +5,10 @@
     problems",
 
     https://learnyouanelm.github.io/pages/10-functionally-solving-problems.html
+
+    The code below tries to find a general solution which finds a Shortest
+    path between two points in a graph. But the "updatePath" and
+    "findShortestPath" are not completed yet.
 -}
 module HeatLondon exposing(..)
 import Dict exposing (Dict)

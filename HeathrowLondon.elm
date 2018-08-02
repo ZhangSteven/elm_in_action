@@ -1,5 +1,14 @@
 {-
-    The path finding problem
+    Find the shortest path from Heathrow airport to London.
+
+    This exercise comes from <Learn You an Elm>, Chapter "Functionally solving
+    problems",
+
+    https://learnyouanelm.github.io/pages/10-functionally-solving-problems.html
+
+    The below code comes from the book, with minor modifications.
+
+    They are tested OK.
 -}
 
 -- module name must match the file name, first letter capitalized
@@ -137,6 +146,66 @@ groupsOf n list =
                     <| groupsOf n (List.drop n xs)
 
 
+{-
+    Next step: convert the strings to integers.
+
+    Input:  [ ["1", "2", "3"], ["4", "5", "6"] ]
+    Output: [ [1, 2, 3], [4, 5, 6] ]
+
+    To do that, we need a mapping function that map a list of strings
+    to a list of integers, like
+
+    ["1", "2", "4"] -> [1, 2, 4]
+-}
+
+-- If any element in a list is Nothing, then the whole list is Nothing.
+allOrNothing : List (Maybe a) -> Maybe (List a)
+allOrNothing list =
+    let
+        accumulator : Maybe a -> Maybe (List a) -> Maybe (List a)
+        accumulator x acc =
+            case (x, acc) of
+                (Nothing, _) -> Nothing
+                (_, Nothing) -> Nothing
+                (Just value, Just list) -> Just (value :: list)
+
+    in
+        List.foldr accumulator (Just []) list
+
+
+-- Convert [ ["1", "2", "3"], ["4", "5"] ] to [ [1,2,3], [4,5] ]
+toPathDistance : Maybe (List (List String)) -> Maybe (List (List Int))
+toPathDistance list =
+    let
+        -- convert a list of strings to a list of integers, if any one of
+        -- the conversion fails, then the whole list is Nothing.
+        toIntList : List String -> Maybe (List Int)
+        toIntList listS =
+            allOrNothing <| List.map (Result.toMaybe << String.toInt) listS
+
+        flatten : Maybe (Maybe a) -> Maybe a
+        flatten x =
+            case x of
+                Nothing -> Nothing
+                Just value -> value
+
+    in
+        flatten <| Maybe.map allOrNothing
+            <| Maybe.map (List.map toIntList) list
+
+
+-- Convert [ [1,2,3], [4,5,6] ] to [Section 1 2 3, Section 4 5 6]
+toRoadSystem : List (List Int) -> RoadSystem
+toRoadSystem list =
+    case list of
+        (x :: xs) ->
+            case x of
+                (a :: b :: c :: rest) -> (Section a b c) :: (toRoadSystem xs)
+                _ -> toRoadSystem xs
+
+        [] -> []
+
+
 
 output : String
 output =
@@ -148,6 +217,33 @@ output =
 
     -- Test groupsOf
     -- toString <| groupsOf -2 [1, 2, 3]
-    toString <| groupsOf 2 [1, 2, 3]
+    -- toString <| Maybe.withDefault [] <|groupsOf 2 [1, 2, 3]
     -- toString <| groupsOf 3 [1, 2, 3]
     -- toString <| groupsOf 5 [1, 2, 3]
+
+    -- Test toPath
+    -- toString <| allOrNothing [Just 5, Nothing, Just 8]
+    -- toString <| allOrNothing [Just 5, Just 123, Just 8]
+    -- toString <| toPathDistance <| Just [ ["1", "2"], ["3"], ["4", "5"] ]
+    -- toString <| toPathDistance <| Just []
+    -- toString <| toPathDistance <| Nothing
+    -- toString <| toPathDistance <| Just [ ["1", "2A"], ["3"], ["4", "5"] ]
+
+    -- Test optimal path with input string
+    let
+        input = """50
+        10
+        30
+        5
+        90
+        20
+        40
+        2
+        25
+        10
+        8
+        0"""
+
+    in
+        toString <| Maybe.map (optimalPath << toRoadSystem)
+            <| toPathDistance <| groupsOf 3 <| String.words input
