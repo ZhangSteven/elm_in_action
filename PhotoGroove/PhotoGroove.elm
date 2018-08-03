@@ -6,7 +6,7 @@ import Html.Events exposing (onClick)
 import Array exposing (Array)
 import Random
 import Http
-import Json.Decode exposing (Decoder, int, string, list)
+import Json.Decode exposing (Decoder, int, string, list, at)
 import Json.Decode.Pipeline exposing (decode, required, optional)
 
 
@@ -22,10 +22,16 @@ type alias Model =
                                     -- be empty
     , loadingError : Maybe String   -- there may be errors
     , choosenSize : ThumbnailSize
+    , hue : Int
+    , ripple : Int
+    , noise : Int
     }
 
 type Msg =
     SelectByUrl String
+    | SetHue Int
+    | SetRipple Int
+    | SetNoise Int
     | SelectByIndex Int
     | SetSize ThumbnailSize
     | SurpriseMe
@@ -44,6 +50,9 @@ initialModel =
     , selectedUrl = Nothing
     , loadingError = Nothing
     , choosenSize = Medium
+    , hue = 0
+    , ripple = 0
+    , noise = 0
     }
 
 
@@ -115,7 +124,9 @@ update msg model =
              }
             , Cmd.none
             )
-
+        SetHue hue -> ({ model | hue = hue }, Cmd.none)
+        SetRipple ripple -> ({ model | ripple = ripple }, Cmd.none)
+        SetNoise noise -> ({ model | noise = noise }, Cmd.none)
 
 {-
     Create a helper function to add HTML node.
@@ -139,6 +150,56 @@ paperSlider =
 
 
 {-
+    Custom event handler.
+
+    While Html.Events provides event handlers for the most basic events,
+    e.g., onClick, it does not cover all possible events. However, it does
+    expose a few low level functions we can use to implement our own custom
+    event handler.
+
+    A custom event handler is composed of four parts:
+
+    1. The Html.events.on function to create the handler.
+    2. The name of a DOM event.
+    3. A Msg constructor, so that update function can be called with.
+    4. A JSON decoder, so that we can pull a value out of a JavaScript object
+        and into Elm.
+-}
+onImmediateValueChange : (Int -> msg) -> Attribute msg
+onImmediateValueChange toMsg =
+    -- let
+    --     {-
+    --         toMsg: Int -> Msg
+    --         convert the decoded value (int) into a value of type Msg.
+    --
+    --         targetImmediateValue : decode value from JavaScript to an Int
+    --                                value.
+    --
+    --         Json.Decode.map : use a function (a -> b) to transform Decoder a
+    --                           to Decoder b
+    --
+    --         msgDecoder : the decoder that transfrom value from JavaScript
+    --                      to a value of type Msg
+    --     -}
+    --     targetImmediateValue : Decoder Int
+    --     targetImmediateValue =
+    --         at [ "target", "immediateValue" ] int
+    --
+    --     msgDecoder : Decoder msg
+    --     msgDecoder =
+    --         Json.Decode.map toMsg targetImmediateValue
+    --
+    -- in
+    --     Html.Events.on "immediate-value-changed" msgDecoder
+
+    {-
+        The above code works
+    -}
+    Html.Events.on "immediate-value-changed" <| Json.Decode.map toMsg
+        <| at [ "target", "immediateValue" ] int
+
+
+{-
     The view function is responsible for generating the HTML data,
     how that data is rendered, i.e., style, is included in the HTML file.
     For example, the class 'content', 'large', 'selected' (viewThumbnail)
@@ -159,9 +220,9 @@ view model =
             [ onClick SurpriseMe ]
             [ text "Surprise Me!" ]
         , div [ class "filters" ]
-            [ viewFilter "Hue" 0
-            , viewFilter "Ripple" 0
-            , viewFilter "Noise" 0
+            [ viewFilter "Hue" SetHue model.hue
+            , viewFilter "Ripple" SetRipple model.ripple
+            , viewFilter "Noise" SetNoise model.noise
             ]
         , h3 [] [ text "Thumbnail Size: " ]
         , div
@@ -177,11 +238,11 @@ view model =
 {-
     Render the slider component
 -}
-viewFilter : String -> Int -> Html Msg
-viewFilter name magnitude =
+viewFilter : String -> (Int -> Msg) -> Int -> Html Msg
+viewFilter name toMsg magnitude =
     div [ class "filter-slider" ]
         [ label [] [ text name ]
-        , paperSlider [ Html.Attributes.max "11" ] []
+        , paperSlider [ Html.Attributes.max "11", onImmediateValueChange toMsg ] []
         , label [] [ text <| toString magnitude ]
         ]
 
