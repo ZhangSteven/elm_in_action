@@ -10,6 +10,15 @@ import Json.Decode exposing (Decoder, int, string, list, at)
 import Json.Decode.Pipeline exposing (decode, required, optional)
 
 
+{-
+    Declare a function to send a command to Elm runtime,
+-}
+port setFilters : FilterOptions -> Cmd msg
+type alias FilterOptions =
+    { url : String
+    , filters : List { name : String, amount : Int }
+    }
+
 type alias Photo =
     { url : String
     , size : Int
@@ -93,7 +102,22 @@ urlPrefix =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        SelectByUrl url -> ({ model | selectedUrl = Just url }, Cmd.none)
+        -- SelectByUrl url -> ({ model | selectedUrl = Just url }, Cmd.none)
+        SelectByUrl selectedUrl ->
+            let
+                filters =
+                    [ { name = "Hue", amount = model.hue }
+                    , { name = "Ripple", amount = model.ripple }
+                    , { name = "Noise", amount = model.noise }
+                    ]
+
+                url =
+                    urlPrefix ++ "large/" ++ selectedUrl
+
+                cmd =
+                    setFilters { url = url, filters = filters }
+            in
+                (model, cmd)
         SurpriseMe -> (model,
                         let
                             randomPhotoPicker : Random.Generator Int
@@ -128,6 +152,15 @@ update msg model =
         SetRipple ripple -> ({ model | ripple = ripple }, Cmd.none)
         SetNoise noise -> ({ model | noise = noise }, Cmd.none)
 
+
+{-
+    Either selecting a image by hand or pressing the "Surprise me" button will
+    select a image, we want to pass that image url to the filters.
+-}
+
+
+
+
 {-
     Create a helper function to add HTML node.
 
@@ -161,7 +194,7 @@ paperSlider =
 
     1. The Html.events.on function to create the handler.
     2. The name of a DOM event.
-    3. A Msg constructor, so that update function can be called with.
+    3. A Msg constructor, creating messages to the update function.
     4. A JSON decoder, so that we can pull a value out of a JavaScript object
         and into Elm.
 -}
