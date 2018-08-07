@@ -1,4 +1,4 @@
-module PhotoGroove exposing (..)
+port module PhotoGroove exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (id, class, classList, src, name, type_, title)
@@ -8,6 +8,7 @@ import Random
 import Http
 import Json.Decode exposing (Decoder, int, string, list, at)
 import Json.Decode.Pipeline exposing (decode, required, optional)
+-- import Ports exposing (..)
 
 
 {-
@@ -16,7 +17,7 @@ import Json.Decode.Pipeline exposing (decode, required, optional)
 port setFilters : FilterOptions -> Cmd msg
 type alias FilterOptions =
     { url : String
-    , filters : List { name : String, amount : Int }
+    , filters : List { name : String, amount : Float }
     }
 
 type alias Photo =
@@ -103,12 +104,70 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         -- SelectByUrl url -> ({ model | selectedUrl = Just url }, Cmd.none)
-        SelectByUrl selectedUrl ->
+        SelectByUrl url ->
+            applyFilters { model | selectedUrl = Just url }
+
+        SurpriseMe -> (model,
+                        let
+                            randomPhotoPicker : Random.Generator Int
+                            randomPhotoPicker =
+                                Random.int 0 (List.length model.photos - 1)
+                        in
+                            Random.generate SelectByIndex randomPhotoPicker
+                      )
+
+        SelectByIndex index ->
+            let
+                newModel ={ model | selectedUrl =
+                                Maybe.map .url <| Array.get index
+                                    <| Array.fromList model.photos
+                          }
+            in
+                applyFilters newModel
+
+        SetSize size_ -> ({ model | choosenSize = size_ }, Cmd.none)
+
+        LoadPhotos (Ok photos) ->
+            -- ({ model | photos = photos
+            --     , selectedUrl = Maybe.map .url <| List.head photos
+            --  }
+            -- , Cmd.none
+            -- )
+            applyFilters { model 
+                            | photos = photos
+                            , selectedUrl = Maybe.map .url <| List.head photos
+                         }
+
+        LoadPhotos (Err _) ->
+            ({ model |
+                loadingError = Just "Error! (Try turning it off and on again?)"
+             }
+            , Cmd.none
+            )
+
+        SetHue hue ->
+            applyFilters { model | hue = hue }
+
+        SetRipple ripple ->
+            applyFilters { model | ripple = ripple }
+
+        SetNoise noise ->
+            applyFilters { model | noise = noise }
+
+
+{-
+    Either selecting a image by hand or pressing the "Surprise me" button will
+    select a image, we want to pass that image url to the filters.
+-}
+applyFilters : Model -> (Model, Cmd Msg)
+applyFilters model =
+    case model.selectedUrl of
+        Just selectedUrl ->
             let
                 filters =
-                    [ { name = "Hue", amount = model.hue }
-                    , { name = "Ripple", amount = model.ripple }
-                    , { name = "Noise", amount = model.noise }
+                    [ { name = "Hue", amount = toFloat model.hue / 11 }
+                    , { name = "Ripple", amount = toFloat model.ripple / 11 }
+                    , { name = "Noise", amount = toFloat model.noise / 11 }
                     ]
 
                 url =
@@ -118,47 +177,9 @@ update msg model =
                     setFilters { url = url, filters = filters }
             in
                 (model, cmd)
-        SurpriseMe -> (model,
-                        let
-                            randomPhotoPicker : Random.Generator Int
-                            randomPhotoPicker =
-                                Random.int 0 (List.length model.photos - 1)
-                        in
-                            Random.generate SelectByIndex randomPhotoPicker
-                      )
-        SelectByIndex index -> ({model |
-                                    selectedUrl =
-                                        Maybe.map .url <| Array.get index
-                                            <| Array.fromList model.photos
-                                }
-                                , Cmd.none
-                               )
-        SetSize size_ -> ({ model | choosenSize = size_ }, Cmd.none)
 
-        LoadPhotos (Ok photos) ->
-            ({ model | photos = photos
-                , selectedUrl = Maybe.map .url <| List.head photos
-             }
-            , Cmd.none
-            )
-
-        LoadPhotos (Err _) ->
-            ({ model |
-                loadingError = Just "Error! (Try turning it off and on again?)"
-             }
-            , Cmd.none
-            )
-        SetHue hue -> ({ model | hue = hue }, Cmd.none)
-        SetRipple ripple -> ({ model | ripple = ripple }, Cmd.none)
-        SetNoise noise -> ({ model | noise = noise }, Cmd.none)
-
-
-{-
-    Either selecting a image by hand or pressing the "Surprise me" button will
-    select a image, we want to pass that image url to the filters.
--}
-
-
+        Nothing ->
+            (model, Cmd.none)
 
 
 {-
@@ -312,7 +333,8 @@ viewLarge selectedUrl =
     case selectedUrl of
         Nothing -> text ""  -- render nothing at all
         Just url ->
-            img [ class "large", src <| urlPrefix ++ "large/" ++ url ] []
+            -- img [ class "large", src <| urlPrefix ++ "large/" ++ url ] []
+            canvas [ id "main-canvas", class "large" ] []
 
 
 -- render a thumbnail size radio button

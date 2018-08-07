@@ -8,9 +8,50 @@
 
 <body>
 	<div id="elm-area"></div>
+
+	<!-- The image filtering library -->
+	<script type="text/javascript" src="http://elm-in-action.com/pasta.js"></script>
+
 	<script type="text/javascript" src="elm.js"></script>
+
+	<!--
+		Importing pasta.js adds a global JavaScript function called Pasta.apply
+		to the page. It takes two arguments:
+
+		1. A <canvas> element, which is where the 'apply' function will draw
+			the filtered photos.
+		2. An 'option' object, which has the same structure as the FilterOptions
+			record Elm code sends over via the setFilter port.
+	-->
 	<script type="text/javascript">
-		Elm.PhotoGroove.embed(document.getElementById("elm-area"));
+		var app = Elm.PhotoGroove.embed(document.getElementById("elm-area"));
+
+		// Register a callback function to run when Elm runtime sends data over
+		// port 'setFilters'. The JavaScript object 'options' is converted from
+		// Elm record 'FilterOptions'.
+		// app.ports.setFilters.subscribe(options => {
+		// 	Pasta.apply(document.getElementById("main-canvas"), options);
+		// });
+
+		// We want to delay the execution of Pasta.apply to after the second
+		// view updates:
+		//
+		// 1. First view update: view initialModel, selectedUrl = Nothing,
+		// 		viewLarge function does not create canvas yet.
+		// 2. Second view update: LoadPhones Ok, viewLarge function creates
+		 // 	a canvas with element id "main-canvas".
+		 //
+		 // Only after the second view update, we run Pasta.apply.
+		 //
+		app.ports.setFilters.subscribe(options => {
+			requestAnimationFrame(() => {
+				Pasta.apply(document.getElementById("main-canvas"), options);
+			});
+		});
 	</script>
+
+	<!-- <script type="text/javascript">
+		Elm.PhotoGroove.embed(document.getElementById("elm-area"));
+	</script> -->
 </body>
 </html>
