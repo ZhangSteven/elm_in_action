@@ -381,9 +381,25 @@ viewOrError model =
 
 
 main =
-    Html.program
-        { init = (initialModel, initialCmd)
+    -- Html.program
+    --     { init = (initialModel, initialCmd)
+    --     , view = viewOrError
+    --     , update = update
+    --     , subscriptions = (\_ -> statusChanges SetStatus)
+    --     }
+
+    Html.programWithFlags
+        { init = init
         , view = viewOrError
         , update = update
         , subscriptions = (\_ -> statusChanges SetStatus)
         }
+
+
+init : Float -> (Model, Cmd Msg)
+init flags =
+    let
+        status =
+            "Initializing Pasta v" ++ toString flags
+    in
+        ({ initialModel | status = status }, initialCmd)
