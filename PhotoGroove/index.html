@@ -33,20 +33,29 @@
 		// 	Pasta.apply(document.getElementById("main-canvas"), options);
 		// });
 
-		// We want to delay the execution of Pasta.apply to after the second
-		// view updates:
+		// We want to delay the execution of Pasta.apply to until the view
+		// function creates the 'canvas' element in the DOM.
 		//
-		// 1. First view update: view initialModel, selectedUrl = Nothing,
-		// 		viewLarge function does not create canvas yet.
-		// 2. Second view update: LoadPhones Ok, viewLarge function creates
-		 // 	a canvas with element id "main-canvas".
-		 //
-		 // Only after the second view update, we run Pasta.apply.
-		 //
+		// 1. When page just opens: view initialModel, selectedUrl = Nothing,
+		// 		viewLarge function creates a text element instead of canvas.
+		// 2. When finished loading data from server, selectedUrl has something,
+		// 		the page is refreshed with viewlarge adds a canvas with element
+		// 		id "main-canvas".
+		//
+		// We want Pasta.apply to run just before the page is refreshed at (2),
+		// not at (1). Therefore, we use the requestAnimationFrame function,
+		// which registers a function to be called when page is first loaded
+		// at (1), then when the page is refreshed at (2), the Pasta.apply runs.
+		//
 		app.ports.setFilters.subscribe(options => {
 			requestAnimationFrame(() => {
 				Pasta.apply(document.getElementById("main-canvas"), options);
 			});
+		});
+
+		Pasta.addStatusListener(status => {
+			console.log("Got a new status to send to Elm", status);
+			app.ports.statusChanges.send(status);
 		});
 	</script>
 

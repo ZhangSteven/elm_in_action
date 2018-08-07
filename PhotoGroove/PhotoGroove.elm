@@ -12,9 +12,11 @@ import Json.Decode.Pipeline exposing (decode, required, optional)
 
 
 {-
-    Declare a function to send a command to Elm runtime,
+    Declare functions to send and receive messages to and from Elm runtime.
 -}
 port setFilters : FilterOptions -> Cmd msg
+port statusChanges : (String -> msg) -> Sub msg
+
 type alias FilterOptions =
     { url : String
     , filters : List { name : String, amount : Float }
@@ -28,6 +30,7 @@ type alias Photo =
 
 type alias Model =
     { photos : List Photo
+    , status : String
     , selectedUrl : Maybe String    -- use Maybe because the photo List can
                                     -- be empty
     , loadingError : Maybe String   -- there may be errors
@@ -39,6 +42,7 @@ type alias Model =
 
 type Msg =
     SelectByUrl String
+    | SetStatus String
     | SetHue Int
     | SetRipple Int
     | SetNoise Int
@@ -57,6 +61,7 @@ type ThumbnailSize
 initialModel : Model
 initialModel =
     { photos = []
+    , status = ""
     , selectedUrl = Nothing
     , loadingError = Nothing
     , choosenSize = Medium
@@ -107,6 +112,9 @@ update msg model =
         SelectByUrl url ->
             applyFilters { model | selectedUrl = Just url }
 
+        SetStatus status ->
+            ({ model | status = status }, Cmd.none)
+
         SurpriseMe -> (model,
                         let
                             randomPhotoPicker : Random.Generator Int
@@ -133,7 +141,7 @@ update msg model =
             --  }
             -- , Cmd.none
             -- )
-            applyFilters { model 
+            applyFilters { model
                             | photos = photos
                             , selectedUrl = Maybe.map .url <| List.head photos
                          }
@@ -273,6 +281,7 @@ view model =
         , button
             [ onClick SurpriseMe ]
             [ text "Surprise Me!" ]
+        , div [ class "status" ] [ text model.status ]
         , div [ class "filters" ]
             [ viewFilter "Hue" SetHue model.hue
             , viewFilter "Ripple" SetRipple model.ripple
@@ -376,5 +385,5 @@ main =
         { init = (initialModel, initialCmd)
         , view = viewOrError
         , update = update
-        , subscriptions = (\_ -> Sub.none)
+        , subscriptions = (\_ -> statusChanges SetStatus)
         }
