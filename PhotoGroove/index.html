@@ -24,7 +24,7 @@
 			record Elm code sends over via the setFilter port.
 	-->
 	<script type="text/javascript">
-		var app = Elm.PhotoGroove.embed(document.getElementById("elm-area"));
+		var app = Elm.PhotoGroove.embed(document.getElementById("elm-area"), Pasta.version);
 
 		// Register a callback function to run when Elm runtime sends data over
 		// port 'setFilters'. The JavaScript object 'options' is converted from
@@ -54,7 +54,7 @@
 		});
 
 		Pasta.addStatusListener(status => {
-			console.log("Got a new status to send to Elm", status);
+			// console.log("Got a new status to send to Elm", status);
 			app.ports.statusChanges.send(status);
 		});
 	</script>
