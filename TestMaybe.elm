@@ -1,84 +1,84 @@
 {-
-    Maybe: a container for value, like List. The difference is: Maybe
-    contains at most one value.
+    "Our world is full of uncertainty. This uncertainty bleeds into our programs.
+    A common way of dealing with this is null/nil. Unfortunately, this leads to
+    even more uncertainty because this design means any value in our system
+    could be null unless we've explicitly checked its presence. Constantly
+    checking the presence of every value is a lot of work so we tend to check
+    only the riskiest places and then have to deal with runtime null exceptions
+    in the rest of our code."
 
-    list : List String
-    Defines list as a List of String values, can be empty.
+    "The Mechanics of Maybe": from
+    https://robots.thoughtbot.com/maybe-mechanics
 
-    a : Maybe String
-    Defines a as either a String value or Nothing.
+    Elm and many other languages use a different approach to dealing with
+    uncertainty: Maybe.
+
+    In Elm, all values are guaranteed to be present except for those wrapped in
+    a Maybe. This is a critical distinction. You can now be confident in most
+    of your code and the compiler will force you to make presence-checks in
+    places where values are optional.
+
+    Its type definition looks like:
+
+    type Maybe a =
+        Just a
+        | Nothing
 -}
 module TestMaybe exposing(..)
+import Set exposing (Set)
 
 
 {-
-    Maybe <type> =
-        Just <type> |
-        Nothing
-
-    Where 'Nothing' is a predefined value in Elm, and 'Just' is a function
-    which takes a value and returns a Maybe object wrapping that value.
-
-    To assign a value to a binding of type Maybe <type>, use Nothing or
-    call the function 'Just' with the value.
+    The most basic way of dealing with a Maybe is via a case statement.
 -}
-a : Maybe Int
-a = Nothing
+type alias Book =
+    { name : String }
 
-b : Maybe Int
--- b = 10  type mismatch, use 'Just' function to create Maybe Int type
-b = Just 10
+type alias User =
+    { name : String
+    , age : Int
+    , books : List Book }
+
+firstUserName : List User -> Maybe String
+firstUserName list =
+    case List.head list of
+        Nothing -> Nothing
+        Just user -> Just user.name
 
 
 {-
-    Compare Maybe values to others.
+    Maybe.map and Maybe.andThen
 
-    Compares variable 'x' of some value to a Maybe value 'm', and returns
-    the bigger one. The rules are:
+    However, the above approach can quickly devolve into a nightmare of nested
+    case statements. For example, we need to extract the name of the first user,
+    then return an upper case version of the book name.
 
-    1. If the Maybe value is Nothing, then return x
-    2. If the Maybe value contains something, then do comparison and returns
-    the bigger one.
+    -- This implementation works but not so elegant
+    firstUserBook list =
+        case List.head list of
+            Nothing -> Nothing
+            Just user ->
+                case List.head user.books of
+                    Nothing -> Nothing
+                    Just book -> Just (String.toUpper book.name)
 
-    Here is a version that returns a value
+    Use helper functions. Suppose we want to do a transformation to a Maybe
+    value, say Maybe a -> Maybe b. Then,
+
+    1. If our function is (a -> b), use Maybe.map.
+    2. If our function is (a -> Maybe b), use Maybe.andThen
 -}
-bigger : comparable -> Maybe comparable -> comparable
-bigger x m =
-    case m of
-        Nothing -> x
-        {-
-            'Just value' is the way to destructure a Maybe value, in
-            this case, 'value' represents the value inside the Maybe
-            container. Using other variable name like 'Juse n' does
-            the same.
-        -}
-        Just value ->
-            if x > value then
-                x
-            else
-                value
+firstUserBook : List User -> Maybe String
+firstUserBook list =
+    Maybe.map (String.toUpper << .name)
+        <| Maybe.andThen List.head
+        <| Maybe.map .books
+        <| List.head list
 
 
 {-
-    A slight different way to implement the bigger function. But this one
-    returns a 'Maybe' value. This can be useful in situations like a
-    List maxixum algorightm, where the bigger function serves as the
-    accumulator.
--}
-bigger2 : comparable -> Maybe comparable -> Maybe comparable
-bigger2 x m =
-    if
-        case m of
-            Nothing -> True
-            Just value -> x > value
-    then
-        Just x  -- need to use 'Just x' instead of 'x', because the return
-                -- type is 'Maybe'
-    else
-        m
+    List.filterMap
 
-
-{-
     Max of maximums.
 
     Suppose we have a list of lists of numbers, like below:
@@ -126,48 +126,58 @@ maximum2 =
 
 output : String
 output =
-    -- toString [a, b]
-    -- toString <| bigger 10 Nothing    -- 10
-    -- toString <| bigger 10 <| Just 12    -- 12
-
-    -- Error, type mismatch
-    -- toString <| bigger 10 <| 12
-
-    -- toString <| bigger2 10 <| Nothing
-
     let
-        {-
-            Maybe.map : (a -> b) -> Maybe a -> Maybe b
-            It takes a mapping function (a -> b), apply it on
-            a value (Maybe a), then:
-                if it is Nothing: return Nothing
-                if it is Just a : apply (a -> b), returns Just b
-
-            This function is useful in situations where you want to
-            change a Maybe value, but is not at an appropriate place
-            to handle the case of Nothing. So you just leave Nothing
-            as is, waiting for functions up the chain who are at a
-            better position to handle it.
-
-            Maybe.withDefault : a -> Maybe a -> a
-            It takes a default value and a Maybe value, if the Maybe
-            value is Nothing, then use the default value, otherwise
-            use the Maybe's inner value.
-
-            This function is used in situations where you know how to
-            handle the case of Nothing.
-
-            Combining the two functions, we can do something interesting,
-            such as showing a Maybe value to the output.
-        -}
-        resultAsString : Maybe a -> String
-        resultAsString =
-            Maybe.withDefault "nothing" << Maybe.map toString
+        isaac = User "Isaac" 6 [{ name = "mummies" }, { name = "knights" }]
+        andy = User "Andy" 5 [{ name = "knights" }, { name = "stars" }]
+        chloe = User "Chloe" 7 []
     in
-        -- resultAsString <| maximum <| []
-        -- resultAsString <| maximum <| [ [] ]
-        -- resultAsString <| maximum <| [ [1, 8.8, 3], [], [12.5], [-2, 11] ]
+        -- Maybe.withDefault "no users exist"
+        --     <| firstUserName [isaac, andy, chloe]
+        -- Maybe.withDefault "no users exist"
+        --     <| firstUserName []
+        Maybe.withDefault "no users or books exist"
+            <| firstUserBook [isaac, andy, chloe]
+        -- Maybe.withDefault "no users or books exist"
+        --     <| firstUserBook []
+        -- Maybe.withDefault "no users or books exist"
+        --     <| firstUserBook [chloe, isaac, andy]
 
-        -- resultAsString <| maximum2 <| []
-        -- resultAsString <| maximum2 <| [ [] ]
-        resultAsString <| maximum2 <| [ [1, 8.8, 3], [], [12.5], [-2, 11] ]
+    -- toString [a, b]
+
+
+    -- let
+    --     {-
+    --         Maybe.map : (a -> b) -> Maybe a -> Maybe b
+    --         It takes a mapping function (a -> b), apply it on
+    --         a value (Maybe a), then:
+    --             if it is Nothing: return Nothing
+    --             if it is Just a : apply (a -> b), returns Just b
+    --
+    --         This function is useful in situations where you want to
+    --         change a Maybe value, but is not at an appropriate place
+    --         to handle the case of Nothing. So you just leave Nothing
+    --         as is, waiting for functions up the chain who are at a
+    --         better position to handle it.
+    --
+    --         Maybe.withDefault : a -> Maybe a -> a
+    --         It takes a default value and a Maybe value, if the Maybe
+    --         value is Nothing, then use the default value, otherwise
+    --         use the Maybe's inner value.
+    --
+    --         This function is used in situations where you know how to
+    --         handle the case of Nothing.
+    --
+    --         Combining the two functions, we can do something interesting,
+    --         such as showing a Maybe value to the output.
+    --     -}
+    --     resultAsString : Maybe a -> String
+    --     resultAsString =
+    --         Maybe.withDefault "nothing" << Maybe.map toString
+    -- in
+    --     -- resultAsString <| maximum <| []
+    --     -- resultAsString <| maximum <| [ [] ]
+    --     -- resultAsString <| maximum <| [ [1, 8.8, 3], [], [12.5], [-2, 11] ]
+    --
+    --     -- resultAsString <| maximum2 <| []
+    --     -- resultAsString <| maximum2 <| [ [] ]
+    --     resultAsString <| maximum2 <| [ [1, 8.8, 3], [], [12.5], [-2, 11] ]
